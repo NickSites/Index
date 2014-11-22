@@ -1,0 +1,1 @@
+This is a multiplayer chess website written using Node.js and Express.js. Accounts will be stored in the "acc" directory. Chess boards will be stored so that players will be able to play games over a period of weeks. Site will be ported to Android/Iphone app.
