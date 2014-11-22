@@ -1,0 +1,9 @@
+{
+	"name":"socket",
+	"version":"0.0.1",
+	"private":"true",
+	"dependencies":{
+		"socket.io":"1.2.0",
+		"express":"3.2.6"
+	}
+}

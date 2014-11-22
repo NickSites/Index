@@ -1,0 +1,60 @@
+<html>
+	<head>
+		<title>sign in/make account</title>
+		<script src="/socket.io/socket.io.js"></script>
+<script>
+var socket = io.connect()
+function submit(){
+	info = JSON.stringify([document.getElementById("u").value,document.getElementById("p").value])
+	if(document.getElementById("nac").innerHTML == "Register"){
+		console.log(info)
+		socket.emit("login",info)
+	}
+	else
+	{	
+		console.log(info)
+		socket.emit("newacc",JSON.stringify(info))
+	}
+}
+function nac(){
+	na =document.getElementById("nac")
+	if(na.innerHTML == "Register"){
+		e = document.getElementById("verify")
+		e.innerHTML = "<h1>Confirm Password</h1><input id = 'cbox'></input>"
+		document.getElementById("nac").innerHTML = "already have account?"
+		document.getElementById("sub").innerHTML = "Create Accout"
+	}else{
+		document.getElementById("sub").innerHTML = "Login"
+		document.getElementById("verify").innerHTML = ""
+		na.innerHTML = "Register"
+	}
+}
+socket.on("newAccount",function(data){
+	console.log(data)
+})
+
+socket.on("attempt login",function(data){
+	if(data == "wrong password"){
+		alert(data)
+	}else{
+		console.log(data)
+		localStorage.setItem("ap",JSON.stringify(data))
+		window.location = "/"
+	}
+})
+</script>
+	</head>
+
+	<body>
+		<h1>Username</h1>
+		<input id = "u"></input> 
+		<h1>Password</h1>
+		<input type = "password" id = "p"></input>
+		<div id = "verify"></div>
+		<br>
+		<button id = "sub" onclick = "submit()">Login</button>
+		<br>
+		<br>
+		<button id = "nac" onclick="nac()">Register</button>
+	</body>
+</html>

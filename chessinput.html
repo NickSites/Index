@@ -1,0 +1,269 @@
+
+
+<html>
+<body>
+<canvas id="myCanvas" width="500" height="500"
+style="border:1px solid #000000;">
+</canvas>
+
+<script>
+
+
+var select = {x:10,y:10}
+click = false
+window.addEventListener("mousedown",function(e){
+	if(selectPiece == false){
+		move(select,mousePos())
+	};
+
+	click = true;
+	if(selectPiece == true){
+		//clearTimeout(refresh);
+		select = mousePos();
+		selectPiece = false;
+		
+		c.beginPath();
+		c.arc(pos[select.x],pos[select.y],boxw/2,0,2*Math.PI);
+		c.stroke();
+	}
+	},false);
+
+window.addEventListener("mouseup",function(e){
+	click = false;
+	},false);
+
+
+//checks mouse co-ods
+var mouse = {x: 0, y: 0};
+
+document.addEventListener('mousemove', function(e){ 
+    mouse.x = e.clientX || e.pageX; 
+    mouse.y = e.clientY || e.pageY ;
+	
+	mouse.x-= document.getElementById("myCanvas").getBoundingClientRect().left;
+	mouse.y-= document.getElementById("myCanvas").getBoundingClientRect().top;
+}, false);
+
+
+
+function post(path, params, method) {
+    method = method || "post"; // Set method to post by default if not specified.
+
+    // The rest of this code assumes you are not using a library.
+    // It can be made less wordy if you use one.
+    var form = document.createElement("form");
+    form.setAttribute("method", method);
+    form.setAttribute("action", path);
+
+    for(var key in params) {
+        if(params.hasOwnProperty(key)) {
+            var hiddenField = document.createElement("input");
+            hiddenField.setAttribute("type", "hidden");
+            hiddenField.setAttribute("name", key);
+            hiddenField.setAttribute("value", params[key]);
+
+            form.appendChild(hiddenField);
+         }
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+}
+var canvas = document.getElementById("myCanvas");
+var c = canvas.getContext("2d");
+
+//images
+var fullChess = new Image()
+fullChess.src = "chessPieces.jpg"
+
+var boxh = canvas.height/8, boxw = canvas.width/8;
+
+var chessMatrix = [], resetString = "RHBKQBHRPPPPPPPPXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.P.P.P.P.P.P.P.P.R.H.B.K.Q.B.H.R"
+var selectPiece = true, selectedx, selectedy
+
+
+
+function drawPiece(x,y,type){
+	if(type < 6)c.drawImage(fullChess,type*fullChess.width/6,0,fullChess.width/6,fullChess.height/2,x,y,fullChess.width/6,fullChess.height/2)
+	if(type >= 6){
+		type -= 6
+		c.drawImage(fullChess,type*fullChess.width/6,fullChess.height/2,fullChess.width/6,fullChess.height/2,x,y,fullChess.width/6,fullChess.height/2)
+	}
+}
+
+function transPiece(letter){
+	if(letter == "P")return 0
+	if(letter == "B")return 1
+	if(letter == "H")return 2
+	if(letter == "R")return 3
+	if(letter == "Q")return 4
+	if(letter == "K")return 5
+	if(letter == ".P")return 6
+	if(letter == ".B")return 7
+	if(letter == ".H")return 8
+	if(letter == ".R")return 9
+	if(letter == ".Q")return 10
+	if(letter == ".K")return 11
+	return 12
+
+}
+
+function reset(){
+    account.board = resetString
+	post(/chesswrite.php/,{move:JSON.stringify(account)})
+}
+
+//move a piece. need two objects with x/y coords
+function move(oldObj, newMoveObj){
+	piece = chessMatrix[oldObj.y][oldObj.x];
+	//c.clearRect(oldObj.x,oldObj.y,fullChess.width/6,fullChess.width/6)
+	chessMatrix[oldObj.y][oldObj.x] = "X";
+	chessMatrix[newMoveObj.y][newMoveObj.x] = piece;
+	account.board = getChessData();
+	post(/chesswrite.php/,{move:JSON.stringify(account).replace(/\\/g,"")});
+}
+
+
+//draw board
+function drawRow(y){
+	for(i=1;i<=8;i++){
+		c.strokeRect(i*boxw-boxw,y,boxw,boxh)
+	}
+}
+function drawRows(){
+		for(j=0;j<8;j++)drawRow(j*boxh);
+	}
+
+//setup x/y array (distance between box positions)
+pos = [[]]
+for(i=0;i<8;i++)pos[i]= boxw/2+i*boxw;
+
+//mouse array position
+function mousePos(){
+	return {x: Math.floor(mouse.x/boxw), y: Math.floor(mouse.y/boxh)}
+}
+
+//piece setup function (row)
+function rowset(array,row){
+	for(i=0;i<8;i++){
+		if(array[i][0] == ".")c.fillStyle = "red"
+		if(array[i] !== "X"){
+			c.fillText(array[i],pos[i],pos[row])
+			console.log(array[i])
+			//console.log(pos[i])
+			//console.log(pos[row])			
+			drawPiece(pos[i] - fullChess.width/12,pos[row]-fullChess.height/4,transPiece(array[i]))
+			//drawPiece(1,1,1)
+			console.log(transPiece(array[i]))
+		}
+		c.fillStyle = "black"
+	}
+}
+
+
+//function for board setup
+function boardset(string){
+	team = ""
+	chessMatrix = []
+	blackPieces = 0//for handling the dots
+
+	rowArray = []
+	for(j=0;j<64;j++){
+		if(string[j+blackPieces]=="."){
+			team = "."
+			blackPieces++
+			}
+		rowArray.push(team+string[j+blackPieces])
+		team = ""
+
+		
+		if((j+1)%8 == 0){
+			chessMatrix.push(rowArray)
+
+			rowArray = []
+		}
+		
+		c.fillStyle = "black"
+	}
+	
+	for(k=0;k<8;k++){
+		rowset(chessMatrix[k],k)
+	}
+
+}
+
+function renderBoard(string){
+	c.clearRect(0,0,canvas.width,canvas.height)
+	boardset(account.board);
+	drawRows();
+}
+
+function getChessData(){
+	return chessMatrix.toString().replace(/,/g,"")
+}
+
+//function for adding a game
+function saveGame(){
+	if(typeof account.games === 'undefined'){
+		account.games = [];
+		account.gameNames = [];
+	}
+	account.games.push(account.board)
+	account.gameNames.push(prompt("What name?"))
+	post(/chesswrite.php/,{move:JSON.stringify(account).replace(/\\/g,"")});
+}
+
+function deleteGames(){
+	delete account.games
+	delete account.gameNames
+	post(/chesswrite.php/,{move:JSON.stringify(account).replace(/\\/g,"")});
+}
+
+
+//save = "<?php echo readfile("chessdata.txt");?>"
+//boardset(save)
+
+
+//if(selectPiece == true){refresh = setTimeout(function(){window.location = "chessread.php"}, 3000)};
+//rowset(chessMatrix[0],3);
+
+
+//ajax request
+var xmlhttp;
+if (window.XMLHttpRequest)
+  {// code for IE7+, Firefox, Chrome, Opera, Safari
+  xmlhttp=new XMLHttpRequest();
+  }
+else
+  {// code for IE6, IE5
+  xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+  }
+
+var account
+xmlhttp.onreadystatechange=function()
+  {
+  if (xmlhttp.readyState==4 && xmlhttp.status==200)
+    {
+    account = JSON.parse(xmlhttp.response.replace(/\\/g,""))
+	c.clearRect(0,0,canvas.width,canvas.height)
+	drawRows()
+	boardset(account.board)
+	c.beginPath();
+	c.arc(pos[select.x],pos[select.y],boxw/2,0,2*Math.PI);
+	c.stroke();
+	setTimeout(function(){
+		//xmlhttp.open("GET","chessdata.txt",true);
+		//xmlhttp.send();
+	}, 10000)
+    }
+  }
+  
+drawRows()
+xmlhttp.open("GET","chessdata.txt",true);
+xmlhttp.send();
+</script>
+<br>
+<button></button>
+<button onclick="reset()">Reset Board</button>
+</body>
+</html>
